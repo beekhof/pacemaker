@@ -84,29 +84,29 @@ xmlfromIPC(IPC_Channel * ch, int timeout)
 static int
 xml2ipcchan(xmlNode * m, IPC_Channel * ch)
 {
-    HA_Message *msg = NULL;
+    HA_Message  *msg = NULL;
     IPC_Message *imsg = NULL;
-
+        
     if (m == NULL || ch == NULL) {
-        cl_log(LOG_ERR, "Invalid msg2ipcchan argument");
+        qb_log(LOG_ERR, "Invalid msg2ipcchan argument");
         errno = EINVAL;
         return HA_FAIL;
     }
 
     msg = convert_xml_message(m);
     if ((imsg = hamsg2ipcmsg(msg, ch)) == NULL) {
-        cl_log(LOG_ERR, "hamsg2ipcmsg() failure");
+        qb_log(LOG_ERR, "hamsg2ipcmsg() failure");
         crm_msg_del(msg);
         return HA_FAIL;
     }
     crm_msg_del(msg);
-
+        
     if (ch->ops->send(ch, imsg) != IPC_OK) {
         if (ch->ch_status == IPC_CONNECT) {
-            snprintf(ch->failreason, MAXFAILREASON,
+            snprintf(ch->failreason,MAXFAILREASON, 
                      "send failed,farside_pid=%d, sendq length=%ld(max is %ld)",
-                     ch->farside_pid, (long)ch->send_queue->current_qlen,
-                     (long)ch->send_queue->max_qlen);
+                     ch->farside_pid, (long)ch->send_queue->current_qlen, 
+                     (long)ch->send_queue->max_qlen);        
         }
         imsg->msg_done(imsg);
         return HA_FAIL;

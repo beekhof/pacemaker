@@ -41,7 +41,6 @@
 #  include <glue_config.h>
 #endif
 
-#include <clplumbing/cl_log.h>
 #include <clplumbing/uids.h>
 #include <pils/plugin.h>
 #include <dirent.h>

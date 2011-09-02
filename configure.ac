@@ -1022,6 +1022,8 @@ if test x"$ac_cv_lib_plumb_G_main_add_IPC_Channel" != x"yes"; then
    AC_MSG_FAILURE(Core Heartbeat utility libraries not found: $ac_cv_lib_plumb_G_main_add_IPC_Channel)
 fi
 
+AC_CHECK_LIB(qb, qb_log_from_external_source)
+
 dnl Compatability checks
 AC_CHECK_FUNCS(msgfromIPC_timeout)
 AC_CHECK_MEMBERS([struct lrm_ops.fail_rsc],,,[[#include <lrm/lrm_api.h>]])
