@@ -514,8 +514,8 @@ main(int argc, char ** argv)
     int option_index = 0;
     const char *actions[] = { "reboot", "poweroff", "list", "monitor", "status" };
 
-    set_crm_log_level(LOG_INFO);
     crm_system_name = "stonith-ng";    
+    crm_log_init("stonith-ng", LOG_INFO, TRUE, TRUE, argc, argv);
     crm_set_options(NULL, "mode [options]", long_options,
 		    "Provides a summary of cluster's current state."
 		    "\n\nOutputs varying levels of detail in a number of different formats.\n");
@@ -611,7 +611,6 @@ main(int argc, char ** argv)
 	crm_help('?', LSB_EXIT_GENERIC);
     }
 
-    crm_log_init("stonith-ng", crm_log_level, TRUE, TRUE, argc, argv);
     mainloop_add_signal(SIGTERM, stonith_shutdown);
 	
     /* EnableProcLogging(); */
