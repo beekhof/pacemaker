@@ -152,11 +152,13 @@ log_cib_diff(int log_level, xmlNode * diff, const char *function)
     int del_epoch = 0;
     int del_admin_epoch = 0;
 
-    const char *digest = crm_element_value(diff, XML_ATTR_DIGEST);
+    const char *digest;
 
     if (diff == NULL) {
         return;
     }
+
+    digest = crm_element_value(diff, XML_ATTR_DIGEST);
 
     cib_diff_version_details(diff, &add_admin_epoch, &add_epoch, &add_updates,
                              &del_admin_epoch, &del_epoch, &del_updates);

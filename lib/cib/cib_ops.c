@@ -827,9 +827,6 @@ cib_config_changed(xmlNode * last, xmlNode * next, xmlNode ** diff)
     }
 
   done:
-    if(next) {
-        fix_cib_diff(last, next, *diff, config_changes);
-    }
     if (xpathObj) {
         xmlXPathFreeObject(xpathObj);
     }
@@ -840,8 +837,9 @@ xmlNode *
 diff_cib_object(xmlNode * old_cib, xmlNode * new_cib, gboolean suppress)
 {
     xmlNode *diff = NULL;
+    gboolean changed = cib_config_changed(old_cib, new_cib, &diff);
 
-    cib_config_changed(old_cib, new_cib, &diff);
+    fix_cib_diff(old_cib, new_cib, diff, changed);
 
     return diff;
 }
