@@ -1970,7 +1970,7 @@ process_lrm_event(lrmd_event_data_t * op)
     }
 
     if (op->output) {
-        char *prefix = g_strdup_printf("%s_%s_%d:%d", op->rsc_id, op->op_type, op->interval, op->call_id);
+        char *prefix = g_strdup_printf("%s_%s_%d:%d:%d", op->rsc_id, op->op_type, op->interval, op->call_id, op->pid);
 
         if (op->rc) {
             crm_log_output(LOG_NOTICE, prefix, op->output);

@@ -50,6 +50,7 @@ typedef struct lrmd_key_value_s {
 #define F_LRMD_CLASS            "lrmd_class"
 #define F_LRMD_PROVIDER         "lrmd_provider"
 #define F_LRMD_TYPE             "lrmd_type"
+#define F_LRMD_PID              "lrmd_pid"
 #define F_LRMD_ORIGIN           "lrmd_origin"
 
 #define F_LRMD_RSC_RUN_TIME      "lrmd_run_time"
@@ -146,6 +147,8 @@ typedef struct lrmd_event_data_s {
     int start_delay;
     /*! This operation that just completed is on a deleted rsc. */
     int rsc_deleted;
+    /*! For rsc execution events, this is the last pid of the executing operation. */
+    int pid;
 
     /*! The executed ra return code */
     enum lrmd_exec_rc rc;

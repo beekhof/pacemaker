@@ -45,6 +45,7 @@ typedef struct lrmd_cmd_s {
     int call_id;
     int exec_rc;
     int lrmd_op_status;
+    int last_pid;
 
     int call_opts;
     /* Timer ids, must be removed on cmd destruction. */
@@ -299,6 +300,7 @@ send_cmd_complete_notify(lrmd_cmd_t * cmd)
     crm_xml_add_int(notify, F_LRMD_OP_STATUS, cmd->lrmd_op_status);
     crm_xml_add_int(notify, F_LRMD_CALLID, cmd->call_id);
     crm_xml_add_int(notify, F_LRMD_RSC_DELETED, cmd->rsc_deleted);
+    crm_xml_add_int(notify, F_LRMD_PID, cmd->last_pid);
 
 #ifdef HAVE_SYS_TIMEB_H
     ftime(&now);
@@ -398,6 +400,7 @@ cmd_finalize(lrmd_cmd_t * cmd, lrmd_rsc_t * rsc)
     } else {
         /* Clear all the values pertaining just to the last iteration of a recurring op. */
         cmd->lrmd_op_status = 0;
+        cmd->last_pid = 0;
         memset(&cmd->t_run, 0, sizeof(cmd->t_run));
         memset(&cmd->t_queue, 0, sizeof(cmd->t_queue));
         free(cmd->output);
@@ -512,6 +515,7 @@ action_complete(svc_action_t * action)
     }
 #endif
 
+    cmd->last_pid = action->pid;
     cmd->exec_rc = get_uniform_rc(action->standard, cmd->action, action->rc);
     cmd->lrmd_op_status = action->status;
     rsc = cmd->rsc_id ? g_hash_table_lookup(rsc_list, cmd->rsc_id) : NULL;

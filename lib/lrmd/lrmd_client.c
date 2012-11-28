@@ -210,6 +210,7 @@ lrmd_dispatch_internal(const char *buffer, ssize_t length, gpointer userdata)
         crm_element_value_int(msg, F_LRMD_EXEC_RC, (int *)&event.rc);
         crm_element_value_int(msg, F_LRMD_OP_STATUS, &event.op_status);
         crm_element_value_int(msg, F_LRMD_RSC_DELETED, &event.rsc_deleted);
+        crm_element_value_int(msg, F_LRMD_PID, &event.pid);
 
         crm_element_value_int(msg, F_LRMD_RSC_RUN_TIME, (int *)&event.t_run);
         crm_element_value_int(msg, F_LRMD_RSC_RCCHANGE_TIME, (int *)&event.t_rcchange);
