@@ -427,7 +427,7 @@ test_async_fence_timeout(int check_event)
     int rc = 0;
 
     if (check_event) {
-        if (callback_rc != -ETIME) {
+        if (callback_rc != -EHOSTUNREACH) {
             mainloop_test_done(FALSE);
         } else {
             mainloop_test_done(TRUE);
