@@ -264,7 +264,9 @@ systemd_unit_listall(void)
 
     if (error || _ret == NULL) {
         crm_info("Call to ListUnits failed: %s", error ? error->message : "unknown");
-        g_error_free(error);
+        if(error) {
+            g_error_free(error);
+        }
         return NULL;
     }
 
@@ -308,9 +310,11 @@ systemd_unit_exists(const char *name)
     pass = systemd_unit_by_name(systemd_proxy, name, &path, NULL, &error);
 
     if (error || pass == FALSE) {
-        crm_err("Call to ListUnits failed: %s", error ? error->message : "unknown");
-        g_error_free(error);
         pass = FALSE;
+        crm_err("Call to ListUnits failed: %s", error ? error->message : "unknown");
+        if(error) {
+            g_error_free(error);
+        }
 
     } else {
         crm_trace("Got %s", path);
@@ -438,7 +442,9 @@ systemd_unit_exec(svc_action_t * op, gboolean synchronous)
         if (error && strstr(error->message, "systemd1.NoSuchUnit")) {
             op->rc = PCMK_EXECRA_NOT_INSTALLED;
         }
-        g_error_free(error);
+        if(error) {
+            g_error_free(error);
+        }
         goto cleanup;
     }
 
@@ -480,7 +486,6 @@ systemd_unit_exec(svc_action_t * op, gboolean synchronous)
         systemd_daemon_reload(systemd_proxy, &error);
         if(error) {
             g_error_free(error);
-            error = NULL;
         }
         free(override_file);
         free(override_dir);
@@ -492,7 +497,9 @@ systemd_unit_exec(svc_action_t * op, gboolean synchronous)
         unlink(override_file);
         free(override_file);
         systemd_daemon_reload(systemd_proxy, &error);
-        g_error_free(error); error = NULL;
+        if(error) {
+            g_error_free(error);
+        }
 
     } else if (g_strcmp0(action, "restart") == 0) {
         action = "RestartUnit";
