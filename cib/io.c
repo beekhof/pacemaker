@@ -317,8 +317,21 @@ static int cib_archive_filter(const struct dirent * a)
         rc = 0;
 
     } else if ((s.st_mode & S_IFREG) != S_IFREG) {
+#ifdef HAVE_STRUCT_DIRENT_D_TYPE
         crm_trace("%s - wrong type (%d)", a->d_name, a->d_type);
-
+#else
+        unsigned char dtype;
+        switch (s.st_mode & S_IFMT) {
+        case S_IFREG:  dtype = DT_REG;      break;
+        case S_IFDIR:  dtype = DT_DIR;      break;
+        case S_IFCHR:  dtype = DT_CHR;      break;
+        case S_IFBLK:  dtype = DT_BLK;      break;
+        case S_IFLNK:  dtype = DT_LNK;      break;
+        case S_IFIFO:  dtype = DT_FIFO;     break;
+        case S_IFSOCK: dtype = DT_SOCK;     break;
+        default:       dtype = DT_UNKNOWN;  break;
+        }
+#endif
     } else if(strstr(a->d_name, "cib-") != a->d_name) {
         crm_trace("%s - wrong prefix", a->d_name);
 

@@ -448,6 +448,8 @@ case "$host_os" in
 		INIT_EXT=".sh"
 		;;
 *solaris*)
+        LIBS="-L'/usr/lib:/usr/lib/mps'"
+        AC_DEFINE_UNQUOTED(ON_SOLARIS, 1, Compiling for Solaris platform)
 		;;
 *linux*)
 		AC_DEFINE_UNQUOTED(ON_LINUX, 1, Compiling for Linux platform)
@@ -806,6 +808,9 @@ dnl ========================================================================
 
 AC_CHECK_MEMBERS([struct tm.tm_gmtoff],,,[[#include <time.h>]])
 AC_CHECK_MEMBERS([lrm_op_t.rsc_deleted],,,[[#include <lrm/lrm_api.h>]])
+AC_CHECK_MEMBER([struct dirent.d_type],
+    AC_DEFINE(HAVE_STRUCT_DIRENT_D_TYPE,1,[Define this if struct dirent has d_type]),,
+    [#include <dirent.h>])
 
 dnl ========================================================================
 dnl Functions
@@ -1683,7 +1688,29 @@ if test "$GCC" != yes; then
 	enable_fatal_warnings=no
 else
         CFLAGS="$CFLAGS -ggdb"
-
+      case "$host_os" in
+        *solaris*)
+        EXTRA_FLAGS="-fgnu89-inline
+        -Wall
+        -Waggregate-return
+        -Wbad-function-cast
+        -Wcast-align
+        -Wdeclaration-after-statement
+        -Wendif-labels
+        -Wfloat-equal
+        -Wformat=2
+        -Wformat-security
+        -Wformat-nonliteral
+        -Wmissing-prototypes
+        -Wmissing-declarations
+        -Wnested-externs
+        -Wno-long-long
+        -Wno-strict-aliasing
+        -Wpointer-arith
+        -Wstrict-prototypes
+        -Wwrite-strings"
+        ;;
+      *)
 	# We had to eliminate -Wnested-externs because of libtool changes
         EXTRA_FLAGS="-fgnu89-inline
 		-fstack-protector-all
@@ -1705,8 +1732,11 @@ else
 		-Wunused-but-set-variable
 		-Wpointer-arith
 		-Wstrict-prototypes
-    		-Wunsigned-char
+		-Wunsigned-char
 		-Wwrite-strings"
+        ;;
+      esac 
+
 
 # Additional warnings it might be nice to enable one day
 #		-Wshadow
@@ -1734,6 +1764,9 @@ dnl System specific options
         		enable_fatal_warnings=yes
         	fi
           	;;
+     *solaris*)
+         CFLAGS="$CFLAGS -D__EXTENSIONS__ -D_XOPEN_SOURCE=600"
+            ;;
 	esac
 
 	if test "x${enable_fatal_warnings}" != xno && cc_supports_flag -Werror ; then
