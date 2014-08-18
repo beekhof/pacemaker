@@ -21,10 +21,21 @@
 #include <pacemaker.h>
 
 #include <sched.h>
+#ifdef ON_SOLARIS
+#define WDIOC_SETTIMEOUT -1
+#define WDIOS_DISABLECARD -1
+#define WDIOC_SETOPTIONS -1
+#include <sys/uadmin.h>
+#undef SCHED_RR
+#include <procfs.h>
+#else
 #include <syscall.h>
+#endif
 #include <sys/ioctl.h>
 #include <sys/reboot.h>
+#ifdef ON_LINUX
 #include <linux/watchdog.h>
+#endif
 
 #ifdef _POSIX_MEMLOCK
 #  include <sys/mman.h>
@@ -36,6 +47,7 @@ static int wd_fd = -1;
 static int wd_debug = 2;
 static int wd_interval_s = 0;
 
+#ifdef SCHED_RR
 /* Begin kernel duplication */
 /* This duplicates some code from linux/ioprio.h since these are not
  * included even in linux-kernel-headers. Sucks.
@@ -68,6 +80,7 @@ enum {
 #define IOPRIO_PRIO_VALUE(class, data)  (((class) << IOPRIO_CLASS_SHIFT) | data)
 
 /* End kernel duplication */
+#endif
 
 static unsigned char
 mcp_stack_hogger(unsigned char * inbuf, int kbytes)
@@ -413,7 +426,13 @@ do_exit(char kind)
     if(kind != 'c') {
         watchdog_close(false);
         sysrq_trigger(kind);
+#ifdef ON_SOLARIS
+        uintptr_t mdep = NULL;
+        rc = uadmin(A_SHUTDOWN, AD_FASTREBOOT, mdep);
+#else
         rc = reboot(RB_AUTOBOOT);
+#endif
+
         do_crm_log_always(LOG_EMERG, "Reboot failed: %s (%d)", pcmk_strerror(rc), rc);
 
     } else {
