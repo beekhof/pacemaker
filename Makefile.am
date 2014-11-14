@@ -53,13 +53,13 @@ core-clean:
 	list='$(CORE)'; for subdir in $$list; do echo "Cleaning $$subdir"; $(MAKE) -C $$subdir clean || exit 1; done
 
 install-exec-local:
-	$(INSTALL) -d $(DESTDIR)/$(LCRSODIR)
-	$(INSTALL) -d -m 750 $(DESTDIR)/$(CRM_CONFIG_DIR)
-	$(INSTALL) -d -m 750 $(DESTDIR)/$(CRM_STATE_DIR)
-	$(INSTALL) -d -m 750 $(DESTDIR)/$(CRM_BLACKBOX_DIR)
-	-chown $(CRM_DAEMON_USER):$(CRM_DAEMON_GROUP) $(DESTDIR)/$(CRM_CONFIG_DIR)
-	-chown $(CRM_DAEMON_USER):$(CRM_DAEMON_GROUP) $(DESTDIR)/$(CRM_STATE_DIR)
-	-chown $(CRM_DAEMON_USER):$(CRM_DAEMON_GROUP) $(DESTDIR)/$(CRM_BLACKBOX_DIR)
+	$(INSTALL) -d $(DESTDIR)$(LCRSODIR)
+	$(INSTALL) -d -m 750 $(DESTDIR)$(CRM_CONFIG_DIR)
+	$(INSTALL) -d -m 750 $(DESTDIR)$(CRM_STATE_DIR)
+	$(INSTALL) -d -m 750 $(DESTDIR)$(CRM_BLACKBOX_DIR)
+	-chown $(CRM_DAEMON_USER):$(CRM_DAEMON_GROUP) $(DESTDIR)$(CRM_CONFIG_DIR)
+	-chown $(CRM_DAEMON_USER):$(CRM_DAEMON_GROUP) $(DESTDIR)$(CRM_STATE_DIR)
+	-chown $(CRM_DAEMON_USER):$(CRM_DAEMON_GROUP) $(DESTDIR)$(CRM_BLACKBOX_DIR)
 if BUILD_CS_PLUGIN
 	rm -f $(DESTDIR)$(LCRSODIR)/pacemaker.lcrso $(DESTDIR)$(LCRSODIR)/service_crm.so
 	cp $(DESTDIR)$(libdir)/service_crm.so $(DESTDIR)$(LCRSODIR)/pacemaker.lcrso

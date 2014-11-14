@@ -35,6 +35,8 @@
 
 #ifdef HAVE_SYS_SIGNALFD_H
 #include <sys/signalfd.h>
+#else
+#include <poll.h>
 #endif
 
 #include "crm/crm.h"
@@ -45,6 +47,14 @@
 
 #if SUPPORT_CIBSECRETS
 #  include "crm/common/cib_secrets.h"
+#endif
+
+#ifndef HAVE_SYS_SIGNALFD_H
+static volatile gboolean got_sig_chld;
+static void handler_sig_chld(int sig)
+{
+	got_sig_chld = (sig == SIGCHLD);
+}
 #endif
 
 static inline void
@@ -448,21 +458,35 @@ static void
 action_synced_wait(svc_action_t * op, sigset_t mask)
 {
 
-#ifndef HAVE_SYS_SIGNALFD_H
-    CRM_ASSERT(FALSE);
-#else
     int status = 0;
     int timeout = op->timeout;
     int sfd = -1;
     time_t start = -1;
     struct pollfd fds[3];
     int wait_rc = 0;
-
+	nfds_t nfds = 3;
+#ifdef HAVE_SYS_SIGNALFD_H
     sfd = signalfd(-1, &mask, SFD_NONBLOCK);
     if (sfd < 0) {
         crm_perror(LOG_ERR, "signalfd() failed");
     }
-
+#else
+	struct sigaction sa;
+	const struct timespec timeout2 = { .tv_sec = op->timeout, .tv_nsec = 0 };
+	sigset_t sigchld;
+	memset(&sa, 0, sizeof(sa));
+	if (sigemptyset(&sigchld)) {
+		crm_perror(LOG_ERR, "signal handler failed");
+	}
+	sa = (struct sigaction) {
+		.sa_handler = handler_sig_chld,
+		.sa_mask = sigchld,
+		.sa_flags = SA_NOCLDSTOP,
+	};
+	if (sigaction(SIGCHLD, &sa, NULL)) {
+		crm_perror(LOG_ERR, "signal action failed");
+	}
+#endif
     fds[0].fd = op->opaque->stdout_fd;
     fds[0].events = POLLIN;
     fds[0].revents = 0;
@@ -478,8 +502,11 @@ action_synced_wait(svc_action_t * op, sigset_t mask)
     crm_trace("Waiting for %d", op->pid);
     start = time(NULL);
     do {
-        int poll_rc = poll(fds, 3, timeout);
-
+#ifdef HAVE_SYS_SIGNALFD_H
+        int poll_rc = poll(fds, nfds, timeout);
+#else
+		int poll_rc = ppoll(fds, nfds,&timeout2, &sigchld);
+#endif
         if (poll_rc > 0) {
             if (fds[0].revents & POLLIN) {
                 svc_read_output(op->opaque->stdout_fd, op, FALSE);
@@ -488,7 +515,7 @@ action_synced_wait(svc_action_t * op, sigset_t mask)
             if (fds[1].revents & POLLIN) {
                 svc_read_output(op->opaque->stderr_fd, op, TRUE);
             }
-
+#ifdef HAVE_SYS_SIGNALFD_H
             if (fds[2].revents & POLLIN) {
                 struct signalfd_siginfo fdsi;
                 ssize_t s;
@@ -508,6 +535,16 @@ action_synced_wait(svc_action_t * op, sigset_t mask)
                     }
                 }
             }
+#else
+			if (got_sig_chld) {
+				wait_rc = waitpid(op->pid, &status, WNOHANG);
+				if (wait_rc < 0){
+					crm_perror(LOG_ERR, "waitpid() for %d failed", op->pid);
+				} else if (wait_rc > 0) {
+					break;
+				}
+			}
+#endif
 
         } else if (poll_rc == 0) {
             timeout = 0;
@@ -571,8 +608,6 @@ action_synced_wait(svc_action_t * op, sigset_t mask)
     close(op->opaque->stdout_fd);
     close(op->opaque->stderr_fd);
     close(sfd);
-
-#endif
 
 }
 
