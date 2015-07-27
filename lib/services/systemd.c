@@ -195,8 +195,10 @@ systemd_loadunit_cb(DBusPendingCall *pending, void *user_data)
         crm_trace("Got result: %p for %p", reply, pending);
     }
     systemd_loadunit_result(reply, user_data);
+    if(pending == op->opaque->pending) {
+        services_set_op_pending(op, NULL);
 
-    if(pending) {
+    } else if(pending) {
         dbus_pending_call_unref(pending);
     }
     if(reply) {
@@ -209,6 +211,7 @@ systemd_unit_by_name(const gchar * arg_name, svc_action_t *op)
 {
     DBusMessage *msg;
     DBusMessage *reply = NULL;
+    DBusPendingCall* pending = NULL;
     char *name = NULL;
 
 /*
@@ -249,7 +252,11 @@ systemd_unit_by_name(const gchar * arg_name, svc_action_t *op)
         return munit;
     }
 
-    pcmk_dbus_send(msg, systemd_proxy, systemd_loadunit_cb, op, op? op->timeout : DBUS_TIMEOUT_USE_DEFAULT);
+    pending = pcmk_dbus_send(msg, systemd_proxy, systemd_loadunit_cb, op, op->timeout);
+    if(pending) {
+        services_set_op_pending(op, pending);
+    }
+
     dbus_message_unref(msg);
     return NULL;
 }
@@ -462,7 +469,7 @@ systemd_async_dispatch(DBusPendingCall *pending, void *user_data)
     if(op) {
         crm_trace("Got result: %p for %p for %s, %s", reply, pending, op->rsc, op->action);
         if (pending == op->opaque->pending) {
-            op->opaque->pending = NULL;
+            services_set_op_pending(op, NULL);
         } else {
             crm_info("Received unexpected reply for pending DBus call (%p vs %p)",
                      op->opaque->pending, pending);
