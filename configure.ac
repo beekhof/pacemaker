@@ -450,6 +450,7 @@ case "$host_os" in
 		;;
 *solaris*)
 		AC_DEFINE_UNQUOTED(ON_SOLARIS, 1, Compiling for Solaris platform)
+    LDFLAGS+=" -lssp -lssp_nonshared"
 		;;
 *linux*)
 		AC_DEFINE_UNQUOTED(ON_LINUX, 1, Compiling for Linux platform)
@@ -1711,6 +1712,7 @@ else
 
 	# We had to eliminate -Wnested-externs because of libtool changes
         EXTRA_FLAGS="-fgnu89-inline
+    -fstack-protector-all
 		-Wall
 		-Waggregate-return
 		-Wbad-function-cast
@@ -1729,18 +1731,13 @@ else
 		-Wpointer-arith
 		-Wstrict-prototypes
 		-Wwrite-strings
+    -Wunsigned-char
 		-Wunused-but-set-variable
 		-Wunsigned-char"
 
 # Additional warnings it might be nice to enable one day
 #		-Wshadow
 #		-Wunreachable-code
-	case "$host_os" in
-	    *solaris*) ;;
-	    *) EXTRA_FLAGS="$EXTRA_FLAGS
-			-fstack-protector-all"
-		;;
-	esac
 	for j in $EXTRA_FLAGS
 	do
 	  if
