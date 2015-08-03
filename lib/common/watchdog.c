@@ -20,7 +20,9 @@
 #include <crm_internal.h>
 
 #include <sched.h>
+#ifndef ON_SOLARIS
 #include <syscall.h>
+#endif
 #include <sys/ioctl.h>
 #include <sys/reboot.h>
 
@@ -204,7 +206,11 @@ pcmk_panic_local(void)
 
     sysrq_trigger('b');
     /* reboot(RB_HALT_SYSTEM); rc = errno; */
+#ifdef ON_SOLARIS
+    reboot(RB_AUTOBOOT, (char *)"reboot initiated by pacemaker");
+#else
     reboot(RB_AUTOBOOT);
+#endif
     rc = errno;
 
     do_crm_log_always(LOG_EMERG, "Reboot failed, escalating to %d: %s (%d)", ppid, pcmk_strerror(rc), rc);
