@@ -97,13 +97,18 @@ class CTSTest:
         self.logger.debug(args)
 
     def has_key(self, key):
-        return self.Stats.has_key(key)
+        return key in self.Stats
 
     def __setitem__(self, key, value):
         self.Stats[key] = value
 
     def __getitem__(self, key):
-        return self.Stats[key]
+        if str(key) == "0":
+            raise ValueError("Bad call to 'foo in X', should reference 'foo in X.Stats' instead")
+
+        if key in self.Stats:
+            return self.Stats[key]
+        return None
 
     def log_mark(self, msg):
         self.debug("MARK: test %s %s %d" % (self.name,msg,time.time()))
@@ -128,7 +133,7 @@ class CTSTest:
 
     def incr(self, name):
         '''Increment (or initialize) the value associated with the given name'''
-        if not self.Stats.has_key(name):
+        if not name in self.Stats:
             self.Stats[name] = 0
         self.Stats[name] = self.Stats[name]+1
 
@@ -534,7 +539,7 @@ class StonithdTest(CTSTest):
         if not self.is_applicable_common():
             return 0
 
-        if self.Env.has_key("DoFencing"):
+        if "DoFencing" in self.Env.keys():
             return self.Env["DoFencing"]
 
         return 1
@@ -1048,7 +1053,7 @@ class BandwidthTest(CTSTest):
                 T1 = linesplit[0]
                 timesplit = string.split(T1,":")
                 time2split = string.split(timesplit[2],".")
-                time1 = (long(timesplit[0])*60+long(timesplit[1]))*60+long(time2split[0])+long(time2split[1])*0.000001
+                time1 = (int(timesplit[0])*60+int(timesplit[1]))*60+int(time2split[0])+int(time2split[1])*0.000001
                 break
 
         while count < 100:
@@ -1070,7 +1075,7 @@ class BandwidthTest(CTSTest):
         T2 = linessplit[0]
         timesplit = string.split(T2,":")
         time2split = string.split(timesplit[2],".")
-        time2 = (long(timesplit[0])*60+long(timesplit[1]))*60+long(time2split[0])+long(time2split[1])*0.000001
+        time2 = (int(timesplit[0])*60+int(timesplit[1]))*60+int(time2split[0])+int(time2split[1])*0.000001
         time = time2-time1
         if (time <= 0):
             return 0
@@ -1105,7 +1110,7 @@ class MaintenanceMode(CTSTest):
         # fail the resource right after turning Maintenance mode on
         # verify it is not recovered until maintenance mode is turned off
         if action == "On":
-            pats.append("pengine.*: warning:.* Processing failed op %s for %s on" % (self.action, self.rid))
+            pats.append(r"pengine.*:\s+warning:.*Processing failed op %s for %s on" % (self.action, self.rid))
         else:
             pats.append(self.templates["Pat:RscOpOK"] % (self.rid, "stop_0"))
             pats.append(self.templates["Pat:RscOpOK"] % (self.rid, "start_0"))
@@ -1314,7 +1319,7 @@ class ResourceRecover(CTSTest):
         self.debug("Shooting %s aka. %s" % (rsc.clone_id, rsc.id))
 
         pats = []
-        pats.append(r"pengine.*: warning:.* Processing failed op %s for (%s|%s) on" % (self.action,
+        pats.append(r"pengine.*:\s+warning:.*Processing failed op %s for (%s|%s) on" % (self.action,
             rsc.id, rsc.clone_id))
 
         if rsc.managed():
@@ -1574,7 +1579,7 @@ class SplitBrainTest(CTSTest):
             p_max = len(self.Env["nodes"])
             for node in self.Env["nodes"]:
                 p = self.Env.RandomGen.randint(1, p_max)
-                if not partitions.has_key(p):
+                if not p in partitions:
                     partitions[p] = []
                 partitions[p].append(node)
             p_max = len(partitions.keys())
@@ -1583,13 +1588,13 @@ class SplitBrainTest(CTSTest):
             # else, try again
 
         self.debug("Created %d partitions" % p_max)
-        for key in partitions.keys():
+        for key in list(partitions.keys()):
             self.debug("Partition["+str(key)+"]:\t"+repr(partitions[key]))
 
         # Disabling STONITH to reduce test complexity for now
         self.rsh(node, "crm_attribute -V -n stonith-enabled -v false")
 
-        for key in partitions.keys():
+        for key in list(partitions.keys()):
             self.isolate_partition(partitions[key])
 
         count = 30
@@ -1612,7 +1617,7 @@ class SplitBrainTest(CTSTest):
         self.CM.partitions_expected = 1
 
         # And heal them again
-        for key in partitions.keys():
+        for key in list(partitions.keys()):
             self.heal_partition(partitions[key])
 
         # Wait for a single partition to form
@@ -2247,11 +2252,11 @@ class RollingUpgradeTest(CTSTest):
         if not self.is_applicable_common():
             return None
 
-        if not self.Env.has_key("rpm-dir"):
+        if not "rpm-dir" in self.Env.keys():
             return None
-        if not self.Env.has_key("current-version"):
+        if not "current-version" in self.Env.keys():
             return None
-        if not self.Env.has_key("previous-version"):
+        if not "previous-version" in self.Env.keys():
             return None
 
         return 1
@@ -2305,7 +2310,7 @@ class BSC_AddResource(CTSTest):
         if ":" in ip:
             fields = ip.rpartition(":")
             fields[2] = str(hex(int(fields[2], 16)+1))
-            print str(hex(int(f[2], 16)+1))
+            print(str(hex(int(f[2], 16)+1)))
         else:
             fields = ip.rpartition('.')
             fields[2] = str(int(fields[2])+1)
@@ -3109,7 +3114,7 @@ class RemoteStonithd(CTSTest):
         if not self.driver.is_applicable():
             return False
 
-        if self.Env.has_key("DoFencing"):
+        if "DoFencing" in self.Env.keys():
             return self.Env["DoFencing"]
 
         return True

@@ -67,9 +67,9 @@ class BasePatterns:
         }
 
     def get_component(self, key):
-        if self.components.has_key(key):
+        if key in self.components:
             return self.components[key]
-        print "Unknown component '%s' for %s" % (key, self.name)
+        print("Unknown component '%s' for %s" % (key, self.name))
         return []
 
     def get_patterns(self, key):
@@ -87,12 +87,12 @@ class BasePatterns:
     def __getitem__(self, key):
         if key == "Name":
             return self.name
-        elif self.commands.has_key(key):
+        elif key in self.commands:
             return self.commands[key]
-        elif self.search.has_key(key):
+        elif key in self.search:
             return self.search[key]
         else:
-            print "Unknown template '%s' for %s" % (key, self.name)
+            print("Unknown template '%s' for %s" % (key, self.name))
             return None
 
 class crm_lha(BasePatterns):
@@ -489,9 +489,9 @@ class PatternSelector:
             crm_mcp_docker(name)
 
     def get_variant(self, variant):
-        if patternvariants.has_key(variant):
+        if variant in patternvariants:
             return patternvariants[variant]
-        print "defaulting to crm-base for %s" % variant
+        print("defaulting to crm-base for %s" % variant)
         return self.base
 
     def get_patterns(self, variant, kind):
@@ -532,7 +532,7 @@ if __name__ == '__main__':
            template = args[i+1]
 
        else:
-           print "Illegal argument " + args[i]
+           print("Illegal argument " + args[i])
 
 
-    print PatternSelector(kind)[template]
+    print(PatternSelector(kind)[template])

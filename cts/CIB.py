@@ -105,7 +105,7 @@ class CIB11(ConfigBase):
             if not name:
                 name = "r%s%d" % (self.CM.Env["IPagent"], self.counter)
                 self.counter = self.counter + 1
-	    r = Resource(self.Factory, name, self.CM.Env["IPagent"], standard)
+            r = Resource(self.Factory, name, self.CM.Env["IPagent"], standard)
 
         r.add_op("monitor", "5s")
         return r
@@ -387,7 +387,7 @@ class ConfigFactory:
         """register a constructor"""
         _args = [constructor]
         _args.extend(args)
-        setattr(self, methodName, apply(ConfigFactoryItem,_args, kargs))
+        setattr(self, methodName, ConfigFactoryItem(*_args, **kargs))
 
     def unregister(self, methodName):
         """unregister a constructor"""
@@ -415,7 +415,6 @@ class ConfigFactory:
 
 class ConfigFactoryItem:
     def __init__(self, function, *args, **kargs):
-        assert callable(function), "function should be a callable obj"
         self._function = function
         self._args = args
         self._kargs = kargs
@@ -426,7 +425,7 @@ class ConfigFactoryItem:
         _args.extend(args)
         _kargs = self._kargs.copy()
         _kargs.update(kargs)
-        return apply(self._function,_args,_kargs)
+        return self._function(*_args,**_kargs)
 
 # Basic Sanity Testing
 if __name__ == '__main__':
@@ -449,4 +448,4 @@ if __name__ == '__main__':
 
     CibFactory = ConfigFactory(manager)
     cib = CibFactory.createConfig("pacemaker-1.1")
-    print cib.contents()
+    print(cib.contents())

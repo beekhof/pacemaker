@@ -189,18 +189,13 @@ systemd_loadunit_cb(DBusPendingCall *pending, void *user_data)
         reply = dbus_pending_call_steal_reply(pending);
     }
 
-    if(op) {
-        crm_trace("Got result: %p for %p for %s, %s", reply, pending, op->rsc, op->action);
-    } else {
-        crm_trace("Got result: %p for %p", reply, pending);
-    }
-    systemd_loadunit_result(reply, user_data);
-    if(pending == op->opaque->pending) {
-        services_set_op_pending(op, NULL);
+    crm_trace("Got result: %p for %p / %p for %s", reply, pending, op->opaque->pending, op->id);
 
-    } else if(pending) {
-        dbus_pending_call_unref(pending);
-    }
+    CRM_LOG_ASSERT(pending == op->opaque->pending);
+    services_set_op_pending(op, NULL);
+
+    systemd_loadunit_result(reply, user_data);
+
     if(reply) {
         dbus_message_unref(reply);
     }
@@ -466,23 +461,12 @@ systemd_async_dispatch(DBusPendingCall *pending, void *user_data)
         reply = dbus_pending_call_steal_reply(pending);
     }
 
-    if(op) {
-        crm_trace("Got result: %p for %p for %s, %s", reply, pending, op->rsc, op->action);
-        if (pending == op->opaque->pending) {
-            services_set_op_pending(op, NULL);
-        } else {
-            crm_info("Received unexpected reply for pending DBus call (%p vs %p)",
-                     op->opaque->pending, pending);
-        }
-        systemd_exec_result(reply, op);
+    crm_trace("Got result: %p for %p for %s, %s", reply, pending, op->rsc, op->action);
 
-    } else {
-        crm_trace("Got result: %p for %p", reply, pending);
-    }
+    CRM_LOG_ASSERT(pending == op->opaque->pending);
+    services_set_op_pending(op, NULL);
+    systemd_exec_result(reply, op);
 
-    if(pending) {
-        dbus_pending_call_unref(pending);
-    }
     if(reply) {
         dbus_message_unref(reply);
     }
@@ -543,7 +527,6 @@ systemd_unit_exec_with_unit(svc_action_t * op, const char *unit)
             free(state);
             return op->rc == PCMK_OCF_OK;
         } else if (pending) {
-            dbus_pending_call_ref(pending);
             services_set_op_pending(op, pending);
             return TRUE;
         }
