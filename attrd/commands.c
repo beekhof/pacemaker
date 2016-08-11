@@ -31,6 +31,7 @@
 #include <internal.h>
 
 #define ATTRD_PROTOCOL_VERSION "1"
+#define STATUS_PATH_MAX 1024
 
 int last_cib_op_done = 0;
 char *peer_writer = NULL;
@@ -826,6 +827,28 @@ attrd_election_cb(gpointer user_data)
     return FALSE;
 }
 
+static void
+attrd_cib_erase_callback(xmlNode * msg, int call_id, int rc, xmlNode * output, void *user_data)
+{
+    int level = LOG_ERR;
+    char *xpath = user_data;
+
+    switch (rc) {
+        case pcmk_ok:
+            level = LOG_INFO;
+            last_cib_op_done = call_id;
+            break;
+        case -pcmk_err_diff_failed:    /* When an attr changes while the CIB is syncing */
+        case -ETIME:           /* When an attr changes while there is a DC election */
+        case -ENXIO:           /* When an attr changes while the CIB is syncing a
+                                *   newer config from a node that just came up
+                                */
+            level = LOG_WARNING;
+            break;
+    }
+
+    do_crm_log(level, "Update %d for %s: %s (%d)", call_id, xpath, pcmk_strerror(rc), rc);
+}
 
 void
 attrd_peer_change_cb(enum crm_status_type kind, crm_node_t *peer, const void *data)
@@ -839,13 +862,26 @@ attrd_peer_change_cb(enum crm_status_type kind, crm_node_t *peer, const void *da
                 && !is_set(peer->flags, crm_remote_node)) {
                 attrd_peer_sync(peer, NULL);
             }
+
         } else {
+            char xpath[STATUS_PATH_MAX];
+            int rc = pcmk_ok;
+
             /* Remove all attribute values associated with lost nodes */
             attrd_peer_remove(peer->uname, FALSE, "peer loss");
             if (peer_writer && safe_str_eq(peer->uname, peer_writer)) {
                 free(peer_writer);
                 peer_writer = NULL;
                 crm_notice("Lost attribute writer %s", peer->uname);
+            }
+
+            if (the_cib && peer->uname) {
+                snprintf(xpath, STATUS_PATH_MAX, "//node_state[@uname='%s']/%s", peer->uname, XML_TAG_TRANSIENT_NODEATTRS);
+                crm_info("Deleting: %s", xpath);
+
+                rc = the_cib->cmds->delete(the_cib, xpath, NULL, cib_quorum_override | cib_xpath);
+                the_cib->cmds->register_callback_full(the_cib, rc, 120, FALSE, strdup(xpath),
+                                                      "attrd_cib_erase_callback", attrd_cib_erase_callback, free);
             }
         }
     }
