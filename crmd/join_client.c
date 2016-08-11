@@ -196,7 +196,7 @@ do_cl_join_finalize_respond(long long action,
     const char *welcome_from = crm_element_value(input->msg, F_CRM_HOST_FROM);
 
     if (safe_str_neq(op, CRM_OP_JOIN_ACKNAK)) {
-        crm_trace("Ignoring op=%s message", op);
+        crm_trace("Ignoring op=%s message", op); /* Our own CRM_OP_JOIN_CONFIRM reply */ 
         return;
     }
 
@@ -234,14 +234,26 @@ do_cl_join_finalize_respond(long long action,
 
         crm_xml_add_int(reply, F_CRM_JOIN_ID, join_id);
 
-        crm_debug("join-%d: Join complete."
+        crm_info("join-%d: Join complete."
                   "  Sending local LRM status to %s", join_id, fsa_our_dc);
 
+#if !BUILD_ATOMIC_ATTRD
+        /* This is only relevant for the non-atomic attrd.
+         *
+         * The new one will automatically clear the attributes of dead
+         * peers in attrd_peer_change_cb() (now from the cib also) and
+         * joining nodes force attrd to write out the current values
+         * in the 'AM_I_DC == FALSE' block below.
+         *
+         * Leaving it enabled somehow seems to allow a race condition
+         * between us and the DC when we try to shutdown just after an
+         * election.  It is unclear how first_join was still true.
+         */
         if (first_join) {
             first_join = FALSE;
 
             /*
-             * Clear any previous transient node attribute and lrm operations
+             * Clear any previous transient node attributes
              *
              * Corosync has a nasty habit of not being able to tell if a
              *   node is returning or didn't leave in the first place.
@@ -265,6 +277,7 @@ do_cl_join_finalize_respond(long long action,
                 update_attrd(fsa_our_uname, XML_CIB_ATTR_SHUTDOWN, "0", NULL, FALSE);
             }
         }
+#endif
 
         send_cluster_message(crm_get_peer(0, fsa_our_dc), crm_msg_crmd, reply, TRUE);
         free_xml(reply);
