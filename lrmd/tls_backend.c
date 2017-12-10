@@ -133,7 +133,7 @@ lrmd_remote_client_msg(gpointer data)
     return 0;
 }
 
-static void
+void
 lrmd_remote_client_destroy(gpointer user_data)
 {
     crm_client_t *client = user_data;

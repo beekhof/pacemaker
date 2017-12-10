@@ -88,6 +88,8 @@ void lrmd_client_destroy(crm_client_t *client);
 
 void client_disconnect_cleanup(const char *client_id);
 
+void lrmd_remote_client_destroy(gpointer user_data);
+
 /*!
  * \brief Don't worry about freeing this connection. It is
  *        taken care of after mainloop exits by the main() function.
@@ -109,6 +111,7 @@ void ipc_proxy_remove_provider(crm_client_t *client);
 void ipc_proxy_forward_client(crm_client_t *client, xmlNode *xml);
 crm_client_t *ipc_proxy_get_provider(void);
 int ipc_proxy_shutdown_req(crm_client_t *ipc_proxy);
+void ipc_proxy_replace_providers(crm_client_t *ipc_proxy);
 #endif
 
 int process_lrmd_alert_exec(crm_client_t *client, uint32_t id, xmlNode *request);

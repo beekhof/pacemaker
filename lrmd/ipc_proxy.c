@@ -385,6 +385,42 @@ ipc_proxy_add_provider(crm_client_t *ipc_proxy)
 }
 
 void
+ipc_proxy_replace_providers(crm_client_t *ipc_proxy)
+{
+    GHashTableIter iter;
+    crm_client_t *ipc_client = NULL;
+    char *key = NULL;
+    GList *remove_these = NULL;
+    GListPtr gIter = NULL;
+
+    if (ipc_providers == NULL) {
+        return;
+    }
+
+    g_hash_table_iter_init(&iter, ipc_clients);
+    while (g_hash_table_iter_next(&iter, (gpointer *) & key, (gpointer *) & ipc_client)) {
+        const char *proxy_id = ipc_client->userdata;
+        if (safe_str_neq(proxy_id, ipc_proxy->id)) {
+            crm_info("Switching ipc proxy connection for client %s pid %d from %s to %s because the connection was superceeded.",
+                     ipc_client->id, ipc_client->pid, proxy_id, ipc_proxy->id);
+            /* we can't remove during the iteration, other connections
+             * might be still using it, so copy items to a list we can
+             * destroy later
+             */
+            remove_these = g_list_append(remove_these, ipc_client->userdata);
+            ipc_client->userdata = strdup(ipc_proxy->id);
+        }
+    }
+
+    for (gIter = remove_these; gIter != NULL; gIter = gIter->next) {
+        crm_client_t *old_proxy = g_hash_table_lookup(ipc_providers, gIter->data);
+        lrmd_remote_client_destroy(old_proxy);
+    }
+
+    g_list_free_full(remove_these, free);
+}
+
+void
 ipc_proxy_remove_provider(crm_client_t *ipc_proxy)
 {
     GHashTableIter iter;

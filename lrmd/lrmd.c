@@ -1391,6 +1391,7 @@ process_lrmd_signon(crm_client_t * client, uint32_t id, xmlNode * request)
     if (crm_is_true(is_ipc_provider)) {
         /* this is a remote connection from a cluster nodes crmd */
 #ifdef SUPPORT_REMOTE
+        ipc_proxy_replace_providers(client);
         ipc_proxy_add_provider(client);
 #endif
     }
